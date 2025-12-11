@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Progress Reporter</title>
+    <script type="module" src="/main.js" defer></script>
+  </head>
+
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Progress Reporter</p>
+          <h1>Linux process + media status, now with Tauri</h1>
+          <p class="lede">Start the watcher, point it to your <code>.env.process</code> file, and keep an eye on the latest reported process/media.</p>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="field">
+          <label for="config-path">Config file</label>
+          <input id="config-path" type="text" value=".env.process" />
+        </div>
+        <div class="actions">
+          <button id="start-btn">Start watcher</button>
+          <button id="stop-btn" class="ghost">Stop</button>
+          <span id="session-tag" class="tag">—</span>
+        </div>
+        <p class="hint">Expected keys: API_URL, API_KEY, WATCH_TIME, MEDIA_ENABLE, LOG_ENABLE</p>
+      </section>
+
+      <section class="grid">
+        <div class="card stat">
+          <p class="label">Running</p>
+          <p id="running" class="value">—</p>
+        </div>
+        <div class="card stat">
+          <p class="label">Active process</p>
+          <p id="process" class="value">—</p>
+        </div>
+        <div class="card stat">
+          <p class="label">Media title</p>
+          <p id="media-title" class="value">—</p>
+        </div>
+        <div class="card stat">
+          <p class="label">Media artist</p>
+          <p id="media-artist" class="value">—</p>
+        </div>
+        <div class="card stat">
+          <p class="label">Last report</p>
+          <p id="last-report" class="value">—</p>
+        </div>
+      </section>
+
+      <section class="card log">
+        <div class="log-head">
+          <p>Messages</p>
+          <button id="refresh-btn" class="ghost">Refresh</button>
+        </div>
+        <pre id="log-area">Idle</pre>
+      </section>
+    </main>
+  </body>
+</html>
