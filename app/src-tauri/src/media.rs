@@ -1,5 +1,4 @@
 use dbus::arg::RefArg;
-use dbus::blocking::stdintf::org_freedesktop::DBus;
 use dbus::blocking::stdintf::org_freedesktop_dbus::Properties;
 use dbus::blocking::Connection;
 use serde::Serialize;
@@ -18,7 +17,10 @@ pub fn get_media_metadata() -> Option<MediaMetadata> {
         "/org/freedesktop/DBus",
         Duration::from_millis(1500),
     );
-    let names: Vec<String> = dbus_proxy.list_names().ok()?;
+
+    let (names,): (Vec<String>,) = dbus_proxy
+        .method_call("org.freedesktop.DBus", "ListNames", ())
+        .ok()?;
 
     for name in names {
         if !name.starts_with("org.mpris.MediaPlayer2.") {
