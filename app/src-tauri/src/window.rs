@@ -66,8 +66,9 @@ fn x11_active_window() -> Result<Option<String>, String> {
         .map_err(|e| e.to_string())?
         .atom;
 
+    let type_window: u32 = AtomEnum::WINDOW.into();
     let prop = conn
-        .get_property(false, root, net_active, AtomEnum::WINDOW.into(), 0, 1024)
+        .get_property(false, root, net_active, type_window, type_window, 0, 1024)
         .map_err(|e| e.to_string())?
         .reply()
         .map_err(|e| e.to_string())?;
@@ -77,8 +78,9 @@ fn x11_active_window() -> Result<Option<String>, String> {
         _ => return Ok(None),
     };
 
+    let type_string: u32 = AtomEnum::STRING.into();
     let wm_class_reply = conn
-        .get_property(false, window, wm_class, AtomEnum::STRING.into(), 0, 1024)
+        .get_property(false, window, wm_class, type_string, type_string, 0, 1024)
         .map_err(|e| e.to_string())?
         .reply()
         .map_err(|e| e.to_string())?;

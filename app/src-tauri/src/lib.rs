@@ -37,14 +37,16 @@ impl AppState {
     fn new() -> Self {
         Self(Arc::new(AppStateInner::default()))
     }
+}
 
-    fn clone_inner(&self) -> Self {
+impl Clone for AppState {
+    fn clone(&self) -> Self {
         Self(self.0.clone())
     }
 }
 
 #[tauri::command]
-pub async fn start_watcher(state: State<'_, AppState>, config_path: Option<String>) -> Result<Snapshot, String> {
+pub async fn cmd_start_watcher(state: State<'_, AppState>, config_path: Option<String>) -> Result<Snapshot, String> {
     let path = config_path.unwrap_or_else(|| ".env.process".to_string());
     let cfg = config::load_config(&path).map_err(|e| e.to_string())?;
 
@@ -54,7 +56,7 @@ pub async fn start_watcher(state: State<'_, AppState>, config_path: Option<Strin
         h.abort();
     }
 
-    let app_state = state.inner().clone_inner();
+    let app_state = state.inner().clone();
     let cfg_clone = cfg.clone();
     let config_path_for_task = path.clone();
     *handle = Some(tokio::spawn(async move {
@@ -69,7 +71,7 @@ pub async fn start_watcher(state: State<'_, AppState>, config_path: Option<Strin
 }
 
 #[tauri::command]
-pub async fn stop_watcher(state: State<'_, AppState>) -> Result<(), String> {
+pub async fn cmd_stop_watcher(state: State<'_, AppState>) -> Result<(), String> {
     let mut handle = state.0.handle.lock().await;
     if let Some(h) = handle.take() {
         h.abort();
@@ -80,7 +82,7 @@ pub async fn stop_watcher(state: State<'_, AppState>) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn get_status(state: State<'_, AppState>) -> Result<Snapshot, String> {
+pub async fn cmd_get_status(state: State<'_, AppState>) -> Result<Snapshot, String> {
     let handle = state.0.handle.lock().await;
     let running = handle.is_some();
     drop(handle);
@@ -139,7 +141,7 @@ async fn run_loop(cfg: Config, state: AppState, config_path: String, session: Se
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::new())
-        .invoke_handler(tauri::generate_handler![start_watcher, stop_watcher, get_status])
+        .invoke_handler(tauri::generate_handler![cmd_start_watcher, cmd_stop_watcher, cmd_get_status])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

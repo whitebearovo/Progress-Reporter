@@ -27,7 +27,7 @@ function setStatusMessage(message) {
 
 async function refreshStatus() {
   try {
-    const status = await invoke("get_status");
+    const status = await invoke("cmd_get_status");
     runningEl.textContent = status.running ? "Running" : "Stopped";
     processEl.textContent = status.last_process || "—";
     mediaTitleEl.textContent = status.last_media_title || "—";
@@ -43,7 +43,7 @@ async function refreshStatus() {
 async function startWatcher() {
   setBusy(true);
   try {
-    const status = await invoke("start_watcher", { config_path: configInput.value });
+    const status = await invoke("cmd_start_watcher", { config_path: configInput.value });
     setStatusMessage(`Watcher started with ${status.config_path || "config"}`);
   } catch (error) {
     setStatusMessage(`Start failed: ${error}`);
@@ -56,7 +56,7 @@ async function startWatcher() {
 async function stopWatcher() {
   setBusy(true);
   try {
-    await invoke("stop_watcher");
+    await invoke("cmd_stop_watcher");
     setStatusMessage("Watcher stopped");
   } catch (error) {
     setStatusMessage(`Stop failed: ${error}`);

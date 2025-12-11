@@ -1,5 +1,6 @@
 use dbus::arg::RefArg;
-use dbus::blocking::stdintf::org_freedesktop_dbus::{DBus, Properties};
+use dbus::blocking::stdintf::org_freedesktop::DBus;
+use dbus::blocking::stdintf::org_freedesktop_dbus::Properties;
 use dbus::blocking::Connection;
 use serde::Serialize;
 use std::time::Duration;
