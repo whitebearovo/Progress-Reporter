@@ -54,6 +54,18 @@ pub async fn cmd_get_status(state: State<'_, AppState>) -> Result<Snapshot, Stri
     Ok(snap.clone())
 }
 
+#[tauri::command]
+pub async fn cmd_read_config(config_path: Option<String>) -> Result<Config, String> {
+    let path = config_path.unwrap_or_else(|| ".env.process".to_string());
+    crate::config::load_config(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn cmd_write_config(config_path: Option<String>, cfg: Config) -> Result<(), String> {
+    let path = config_path.unwrap_or_else(|| ".env.process".to_string());
+    crate::config::save_config(&path, &cfg).map_err(|e| e.to_string())
+}
+
 async fn run_loop(cfg: Config, state: AppState, config_path: String, session: SessionKind) {
     let mut last_process = String::new();
     let mut last_media = MediaMetadata::default();

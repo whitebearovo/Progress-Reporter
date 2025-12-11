@@ -23,12 +23,38 @@
           <label for="config-path">Config file</label>
           <input id="config-path" type="text" value=".env.process" />
         </div>
+
+        <div class="grid form-grid">
+          <div class="field">
+            <label for="cfg-api-url">API_URL</label>
+            <input id="cfg-api-url" type="text" placeholder="https://api.example.com" />
+          </div>
+          <div class="field">
+            <label for="cfg-api-key">API_KEY</label>
+            <input id="cfg-api-key" type="text" placeholder="your key" />
+          </div>
+          <div class="field">
+            <label for="cfg-watch-time">WATCH_TIME (s)</label>
+            <input id="cfg-watch-time" type="number" min="1" value="5" />
+          </div>
+          <div class="field toggle">
+            <label for="cfg-media-enable">MEDIA_ENABLE</label>
+            <input id="cfg-media-enable" type="checkbox" checked />
+          </div>
+          <div class="field toggle">
+            <label for="cfg-log-enable">LOG_ENABLE</label>
+            <input id="cfg-log-enable" type="checkbox" checked />
+          </div>
+        </div>
+
         <div class="actions">
+          <button id="save-config-btn">Save config</button>
+          <button id="reload-config-btn" class="ghost">Reload</button>
           <button id="start-btn">Start watcher</button>
           <button id="stop-btn" class="ghost">Stop</button>
           <span id="session-tag" class="tag">—</span>
         </div>
-        <p class="hint">Expected keys: API_URL, API_KEY, WATCH_TIME, MEDIA_ENABLE, LOG_ENABLE</p>
+        <p class="hint">编辑并保存配置后再启动 watcher。</p>
       </section>
 
       <section class="grid">

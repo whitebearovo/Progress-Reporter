@@ -12,6 +12,14 @@ const startBtn = document.querySelector("#start-btn");
 const stopBtn = document.querySelector("#stop-btn");
 const refreshBtn = document.querySelector("#refresh-btn");
 const configInput = document.querySelector("#config-path");
+const saveConfigBtn = document.querySelector("#save-config-btn");
+const reloadConfigBtn = document.querySelector("#reload-config-btn");
+
+const cfgApiUrl = document.querySelector("#cfg-api-url");
+const cfgApiKey = document.querySelector("#cfg-api-key");
+const cfgWatchTime = document.querySelector("#cfg-watch-time");
+const cfgMediaEnable = document.querySelector("#cfg-media-enable");
+const cfgLogEnable = document.querySelector("#cfg-log-enable");
 
 let polling;
 
@@ -71,10 +79,47 @@ function ensurePolling() {
   polling = setInterval(refreshStatus, 5000);
 }
 
+async function reloadConfig() {
+  setStatusMessage("Loading config...");
+  try {
+    const cfg = await invoke("cmd_read_config", { config_path: configInput.value });
+    cfgApiUrl.value = cfg.api_url || "";
+    cfgApiKey.value = cfg.api_key || "";
+    cfgWatchTime.value = cfg.watch_time ?? 5;
+    cfgMediaEnable.checked = !!cfg.media_enable;
+    cfgLogEnable.checked = !!cfg.log_enable;
+    setStatusMessage("Config loaded");
+  } catch (error) {
+    setStatusMessage(`Load config failed: ${error}`);
+  }
+}
+
+async function saveConfig() {
+  setBusy(true);
+  try {
+    const cfg = {
+      api_url: cfgApiUrl.value.trim(),
+      api_key: cfgApiKey.value.trim(),
+      watch_time: Number(cfgWatchTime.value || 5),
+      media_enable: cfgMediaEnable.checked,
+      log_enable: cfgLogEnable.checked,
+    };
+    await invoke("cmd_write_config", { config_path: configInput.value, cfg });
+    setStatusMessage("Config saved");
+  } catch (error) {
+    setStatusMessage(`Save failed: ${error}`);
+  } finally {
+    setBusy(false);
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   startBtn.addEventListener("click", startWatcher);
   stopBtn.addEventListener("click", stopWatcher);
   refreshBtn.addEventListener("click", refreshStatus);
+  saveConfigBtn.addEventListener("click", saveConfig);
+  reloadConfigBtn.addEventListener("click", reloadConfig);
   refreshStatus();
+  reloadConfig();
   ensurePolling();
 });

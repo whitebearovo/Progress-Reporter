@@ -60,7 +60,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::cmd_start_watcher,
             commands::cmd_stop_watcher,
-            commands::cmd_get_status
+            commands::cmd_get_status,
+            commands::cmd_read_config,
+            commands::cmd_write_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

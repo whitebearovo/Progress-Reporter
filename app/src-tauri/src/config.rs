@@ -1,9 +1,10 @@
+use serde::{Deserialize, Serialize};
 use std::error::Error;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::fs::{self, File};
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
     pub api_url: String,
     pub api_key: String,
@@ -71,4 +72,21 @@ pub fn load_config(config_path: impl AsRef<Path>) -> Result<Config, Box<dyn Erro
     }
 
     Ok(cfg)
+}
+
+pub fn save_config(config_path: impl AsRef<Path>, cfg: &Config) -> Result<(), Box<dyn Error>> {
+    let path: PathBuf = config_path.as_ref().to_path_buf();
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent)?;
+        }
+    }
+
+    let mut file = File::create(&path)?;
+    writeln!(file, "API_URL={}", cfg.api_url.trim())?;
+    writeln!(file, "API_KEY={}", cfg.api_key.trim())?;
+    writeln!(file, "WATCH_TIME={}", cfg.watch_time)?;
+    writeln!(file, "MEDIA_ENABLE={}", cfg.media_enable)?;
+    writeln!(file, "LOG_ENABLE={}", cfg.log_enable)?;
+    Ok(())
 }

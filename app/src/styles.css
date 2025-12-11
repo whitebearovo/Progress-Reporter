@@ -60,6 +60,10 @@ h1 {
   gap: 12px;
 }
 
+.form-grid {
+  margin: 10px 0;
+}
+
 .stat .label {
   color: #9ba6b2;
   font-size: 12px;
@@ -78,6 +82,12 @@ h1 {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 10px;
+}
+
+.field.toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 }
 
 .field label {
