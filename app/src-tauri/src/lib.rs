@@ -24,14 +24,24 @@ pub struct Snapshot {
     pub config_path: Option<String>,
 }
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 struct AppStateInner {
     handle: Mutex<Option<JoinHandle<()>>>,
     snapshot: Mutex<Snapshot>,
 }
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub struct AppState(Arc<AppStateInner>);
+
+impl AppState {
+    fn new() -> Self {
+        Self(Arc::new(AppStateInner::default()))
+    }
+
+    fn clone_inner(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 #[tauri::command]
 pub async fn start_watcher(state: State<'_, AppState>, config_path: Option<String>) -> Result<Snapshot, String> {
@@ -44,7 +54,7 @@ pub async fn start_watcher(state: State<'_, AppState>, config_path: Option<Strin
         h.abort();
     }
 
-    let app_state = state.clone();
+    let app_state = state.inner().clone_inner();
     let cfg_clone = cfg.clone();
     let config_path_for_task = path.clone();
     *handle = Some(tokio::spawn(async move {
@@ -128,7 +138,7 @@ async fn run_loop(cfg: Config, state: AppState, config_path: String, session: Se
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .manage(AppState::default())
+        .manage(AppState::new())
         .invoke_handler(tauri::generate_handler![start_watcher, stop_watcher, get_status])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

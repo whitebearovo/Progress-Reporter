@@ -1,5 +1,5 @@
 use dbus::arg::RefArg;
-use dbus::blocking::stdintf::org_freedesktop_dbus::Properties;
+use dbus::blocking::stdintf::org_freedesktop_dbus::{DBus, Properties};
 use dbus::blocking::Connection;
 use serde::Serialize;
 use std::time::Duration;
@@ -12,7 +12,12 @@ pub struct MediaMetadata {
 
 pub fn get_media_metadata() -> Option<MediaMetadata> {
     let connection = Connection::new_session().ok()?;
-    let names = connection.list_names().ok()?;
+    let dbus_proxy = connection.with_proxy(
+        "org.freedesktop.DBus",
+        "/org/freedesktop/DBus",
+        Duration::from_millis(1500),
+    );
+    let names: Vec<String> = dbus_proxy.list_names().ok()?;
 
     for name in names {
         if !name.starts_with("org.mpris.MediaPlayer2.") {

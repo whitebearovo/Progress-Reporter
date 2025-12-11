@@ -30,9 +30,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             app/target
-          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          key: cargo-${{ runner.os }}-${{ hashFiles('app/src-tauri/Cargo.lock') }}
           restore-keys: |
             cargo-${{ runner.os }}-
+          save-always: true
 
       - name: Build (AppImage & deb) with tauri-action
         uses: tauri-apps/tauri-action@v0

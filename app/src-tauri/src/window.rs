@@ -3,7 +3,7 @@ use std::process::Command;
 
 use thiserror::Error;
 use x11rb::connection::Connection;
-use x11rb::protocol::xproto::AtomEnum;
+use x11rb::protocol::xproto::{AtomEnum, ConnectionExt};
 use x11rb::rust_connection::RustConnection;
 
 #[derive(Debug, Clone, Copy, serde::Serialize)]
