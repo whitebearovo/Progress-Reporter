@@ -23,24 +23,23 @@ jobs:
             pkg-config \
             build-essential
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo registry
+      - name: Cache cargo
         uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            app/target
           key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
 
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli --version '^2.0.0' --locked
-
-      - name: Build app (AppImage & deb)
-        working-directory: app
-        run: |
-          cargo tauri build --verbose
+      - name: Build (AppImage & deb) with tauri-action
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: app
+          args: --verbose
+          includeDebug: false
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
