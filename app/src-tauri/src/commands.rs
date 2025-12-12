@@ -73,10 +73,19 @@ async fn run_loop(cfg: Config, state: AppState, config_path: String, session: Se
     let mut last_media = MediaMetadata::default();
     let mut last_time = Utc::now();
 
+    let mut media_skip = 0u8;
+
     loop {
         let process_name = safe_active_window().await;
+
         let media_metadata = if cfg.media_enable {
-            safe_media_metadata().await
+            if media_skip == 0 {
+                media_skip = 2; 
+                safe_media_metadata().await
+            } else {
+                media_skip -= 1;
+                last_media.clone()
+            }
         } else {
             MediaMetadata::default()
         };
@@ -109,19 +118,21 @@ async fn run_loop(cfg: Config, state: AppState, config_path: String, session: Se
             snap.last_report_at = Some(last_time.format("%Y-%m-%d %H:%M:%S").to_string());
         }
 
-        tokio::time::sleep(Duration::from_secs(cfg.watch_time.max(3))).await;
+        tokio::time::sleep(Duration::from_millis((cfg.watch_time.max(2) * 1000) as u64)).await;
     }
 }
 
 async fn safe_active_window() -> String {
-    match timeout(Duration::from_millis(1500), spawn_blocking(active_window_process)).await {
+    let fut = spawn_blocking(move || active_window_process());
+    match timeout(Duration::from_millis(200), fut).await {
         Ok(Ok(Ok(name))) => name,
         _ => "None".to_string(),
     }
 }
 
 async fn safe_media_metadata() -> MediaMetadata {
-    match timeout(Duration::from_millis(1500), spawn_blocking(media::get_media_metadata)).await {
+    let fut = spawn_blocking(move || media::get_media_metadata());
+    match timeout(Duration::from_millis(200), fut).await {
         Ok(Ok(Some(meta))) => meta,
         _ => MediaMetadata::default(),
     }
