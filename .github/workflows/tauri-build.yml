@@ -93,13 +93,36 @@ jobs:
           pacman -Syu --noconfirm archlinux-keyring
           pacman -S --noconfirm base-devel git sudo nodejs npm yarn cargo rust pkgconf \
             openssl webkit2gtk gtk3 libayatana-appindicator librsvg dbus libsoup3 \
-            libxkbcommon libx11 libxrandr fuse2
+            libxkbcommon libx11 libxrandr fuse2 sccache
 
       - name: Create build user
         run: |
           useradd -m builder
           echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
           chown -R builder:builder /__w/Progress-Reporter/Progress-Reporter
+
+      - name: Prepare Arch build cache dirs
+        run: |
+          mkdir -p \
+            /home/builder/.cargo/{bin,git,registry} \
+            /home/builder/.cache/{sccache,tauri,cargo-target} \
+            /home/builder/.makepkg/{build,src} \
+            /home/builder/repo/out
+          chown -R builder:builder /home/builder
+
+      - name: Cache Arch build (cargo + sccache)
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/builder/.cargo/bin
+            /home/builder/.cargo/git
+            /home/builder/.cargo/registry
+            /home/builder/.cache/sccache
+            /home/builder/.cache/tauri
+            /home/builder/.cache/cargo-target
+          key: arch-${{ runner.os }}-cargo-${{ hashFiles('app/src-tauri/Cargo.lock', 'app/src-tauri/Cargo.toml', '.github/workflows/tauri-build.yml') }}
+          restore-keys: |
+            arch-${{ runner.os }}-cargo-
 
       - name: Build Arch AUR package locally
         run: |
@@ -114,17 +137,9 @@ jobs:
           url="https://github.com/whitebearovo/Progress-Reporter"
           license=('MIT')
           depends=('webkit2gtk' 'gtk3' 'libayatana-appindicator' 'librsvg' 'dbus' 'openssl' 'libsoup3' 'libxkbcommon' 'libx11' 'libxrandr' 'fuse2')
-          makedepends=('git' 'cargo' 'rust' 'npm' 'nodejs' 'yarn' 'pkgconf')
-<<<<<<< HEAD
-<<<<<<< HEAD
-          source=("progress-reporter::git+file:///__w/Progress-Reporter/Progress-Reporter/.git")
-=======
+          makedepends=('git' 'cargo' 'rust' 'npm' 'nodejs' 'yarn' 'pkgconf' 'sccache')
           # Use the checked-out working copy as the git source.
-          # Pointing to ".git" breaks because it's not a standalone remote.
-=======
->>>>>>> e080f02 (更新 Tauri 構建工作流程，優化依賴安裝步驟以提高構建效率)
           source=("progress-reporter::git+file:///__w/Progress-Reporter/Progress-Reporter")
->>>>>>> 55a5461 (調整 Arch AUR 包構建流程，新增檢查工作樹的命令並修正源碼路徑以確保正確構建)
           sha256sums=('SKIP')
 
           pkgver() {
@@ -134,8 +149,13 @@ jobs:
 
           build() {
             cd "$srcdir/progress-reporter/app"
-            cargo install tauri-cli --version "^2" --locked --root "$srcdir/.cargo"
-            export PATH="$srcdir/.cargo/bin:$PATH"
+            export SCCACHE_DIR="${SCCACHE_DIR:-$HOME/.cache/sccache}"
+            export RUSTC_WRAPPER="${RUSTC_WRAPPER:-sccache}"
+            sccache --start-server >/dev/null 2>&1 || true
+            # Install tauri-cli once and reuse from cached CARGO_HOME.
+            if ! command -v tauri >/dev/null 2>&1; then
+              cargo install tauri-cli --version "^2" --locked
+            fi
             tauri build --bundles appimage
           }
 
@@ -149,10 +169,18 @@ jobs:
           }
           EOF
           chown -R builder:builder /home/builder/repo /__w/Progress-Reporter/Progress-Reporter
-          su builder -c "cd /home/builder/repo && makepkg -sf --noconfirm"
+          su builder -c "cd /home/builder/repo && \
+            export CARGO_HOME=/home/builder/.cargo && \
+            export CARGO_TARGET_DIR=/home/builder/.cache/cargo-target && \
+            export SCCACHE_DIR=/home/builder/.cache/sccache && \
+            export XDG_CACHE_HOME=/home/builder/.cache && \
+            export BUILDDIR=/home/builder/.makepkg/build && \
+            export SRCDEST=/home/builder/.makepkg/src && \
+            export PKGDEST=/home/builder/repo/out && \
+            makepkg -sf --noconfirm"
 
       - name: Upload Arch package artifact
         uses: actions/upload-artifact@v4
         with:
           name: archlinux-pkg-${{ github.sha }}
-          path: /home/builder/repo/*.pkg.tar.zst
+          path: /home/builder/repo/out/*.pkg.tar.zst
