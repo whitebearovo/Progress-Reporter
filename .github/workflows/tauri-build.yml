@@ -12,6 +12,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Restore /usr/share/doc for license files
+        run: |
+          # GitHub runners strip doc files via /etc/dpkg/dpkg.cfg.d/excludes, which makes
+          # linuxdeploy emit copyright warnings. Remove the exclude file before installing packages.
+          if [[ -f /etc/dpkg/dpkg.cfg.d/excludes ]]; then
+            sudo rm /etc/dpkg/dpkg.cfg.d/excludes
+          fi
+
       - name: Install system dependencies (Tauri Linux)
         run: |
           sudo apt-get update
@@ -22,6 +30,23 @@ jobs:
             libssl-dev \
             pkg-config \
             build-essential
+
+      - name: Reinstall runtime GTK/WebKit libs with docs
+        run: |
+          # Reinstall runtime stacks so their copyright files land in /usr/share/doc
+          sudo apt-get install -y --reinstall --no-install-recommends \
+            libwebkit2gtk-4.1-0 \
+            libjavascriptcoregtk-4.1-0 \
+            libsoup-3.0-0 \
+            libgtk-3-0 \
+            libdbus-1-3 \
+            libssl3 \
+            libgstreamer1.0-0 \
+            libgstreamer-plugins-base1.0-0 \
+            libpango-1.0-0 \
+            libcairo2 \
+            libxkbcommon0 \
+            libwayland-client0
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -52,3 +77,72 @@ jobs:
         with:
           name: deb-${{ github.sha }}
           path: app/src-tauri/target/release/bundle/deb/*.deb
+
+  aur-arch-build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Arch build dependencies
+        run: |
+          pacman -Syu --noconfirm archlinux-keyring
+          pacman -S --noconfirm base-devel git sudo nodejs npm yarn cargo rust pkgconf \
+            openssl webkit2gtk gtk3 libayatana-appindicator librsvg dbus libsoup3 \
+            libxkbcommon libx11 libxrandr fuse2
+
+      - name: Create build user
+        run: |
+          useradd -m builder
+          echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+          chown -R builder:builder /__w/Progress-Reporter/Progress-Reporter
+
+      - name: Build Arch AUR package locally
+        run: |
+          su builder -c "cd /home/builder && cp -r /__w/Progress-Reporter/Progress-Reporter repo"
+          cat > /home/builder/repo/PKGBUILD <<'EOF'
+          pkgname=progress-reporter-git
+          pkgver=0.1.0
+          pkgrel=1
+          pkgdesc="Progress Reporter Tauri app"
+          arch=('x86_64')
+          url="https://github.com/whitebearovo/Progress-Reporter"
+          license=('MIT')
+          depends=('webkit2gtk' 'gtk3' 'libayatana-appindicator' 'librsvg' 'dbus' 'openssl' 'libsoup3' 'libxkbcommon' 'libx11' 'libxrandr' 'fuse2')
+          makedepends=('git' 'cargo' 'rust' 'npm' 'nodejs' 'yarn' 'pkgconf')
+          source=("progress-reporter::git+file:///home/builder/repo")
+          sha256sums=('SKIP')
+
+          pkgver() {
+            cd "$srcdir/progress-reporter"
+            printf "0.1.0.r%s.g%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
+          }
+
+          build() {
+            cd "$srcdir/progress-reporter/app"
+            cargo install tauri-cli --version "^2" --locked --root "$srcdir/.cargo"
+            export PATH="$srcdir/.cargo/bin:$PATH"
+            tauri build --bundles appimage
+          }
+
+          package() {
+            cd "$srcdir/progress-reporter/app/src-tauri/target/release/bundle/appimage"
+            local appimage
+            appimage=$(ls *.AppImage | head -n 1)
+            install -Dm755 "$appimage" "$pkgdir/opt/progress-reporter/$appimage"
+            ln -s "/opt/progress-reporter/$appimage" "$pkgdir/usr/bin/progress-reporter"
+            install -Dm644 "$srcdir/progress-reporter/LICENSE" "$pkgdir/usr/share/licenses/progress-reporter/LICENSE"
+          }
+          EOF
+          chown builder:builder /home/builder/repo/PKGBUILD
+          su builder -c "cd /home/builder/repo && makepkg -sf --noconfirm"
+
+      - name: Upload Arch package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: archlinux-pkg-${{ github.sha }}
+          path: /home/builder/repo/*.pkg.tar.zst

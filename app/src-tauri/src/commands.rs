@@ -73,13 +73,35 @@ async fn run_loop(cfg: Config, state: AppState, config_path: String, session: Se
     let mut last_media = MediaMetadata::default();
     let mut last_time = Utc::now();
 
+    let mut window_skip = 0u8;
     let mut media_skip = 0u8;
 
     loop {
-        let process_name = safe_active_window().await;
+        let process_name = match session {
+            SessionKind::WaylandKde => {
+                // KDE Wayland active-window probing is expensive; throttle it harder to avoid UI stalls.
+                if window_skip == 0 {
+                    window_skip = 4;
+                    safe_active_window().await
+                } else {
+                    window_skip -= 1;
+                    last_process.clone()
+                }
+            }
+            _ => safe_active_window().await,
+        };
 
         let media_metadata = if cfg.media_enable {
-            if media_skip == 0 {
+            if matches!(session, SessionKind::WaylandKde) {
+                // On KDE Wayland, lower media polling frequency even further.
+                if media_skip == 0 {
+                    media_skip = 5;
+                    safe_media_metadata().await
+                } else {
+                    media_skip -= 1;
+                    last_media.clone()
+                }
+            } else if media_skip == 0 {
                 media_skip = 2; 
                 safe_media_metadata().await
             } else {
