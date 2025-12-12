@@ -97,7 +97,8 @@ jobs:
         run: |
           pacman -S --noconfirm base-devel git sudo nodejs npm yarn cargo rust pkgconf \
             openssl webkit2gtk gtk3 libayatana-appindicator librsvg dbus libsoup3 \
-            libxkbcommon libx11 libxrandr fuse2 sccache
+            libxkbcommon libx11 libxrandr fuse2 sccache \
+            zstd perl nasm
 
       - name: Create build user
         run: |
