@@ -104,6 +104,7 @@ jobs:
       - name: Build Arch AUR package locally
         run: |
           su builder -c "mkdir -p /home/builder/repo"
+          su builder -c "cd /__w/Progress-Reporter/Progress-Reporter && git rev-parse --is-inside-work-tree"
           cat > /home/builder/repo/PKGBUILD <<'EOF'
           pkgname=progress-reporter-git
           pkgver=0.1.0
@@ -114,7 +115,13 @@ jobs:
           license=('MIT')
           depends=('webkit2gtk' 'gtk3' 'libayatana-appindicator' 'librsvg' 'dbus' 'openssl' 'libsoup3' 'libxkbcommon' 'libx11' 'libxrandr' 'fuse2')
           makedepends=('git' 'cargo' 'rust' 'npm' 'nodejs' 'yarn' 'pkgconf')
+<<<<<<< HEAD
           source=("progress-reporter::git+file:///__w/Progress-Reporter/Progress-Reporter/.git")
+=======
+          # Use the checked-out working copy as the git source.
+          # Pointing to ".git" breaks because it's not a standalone remote.
+          source=("progress-reporter::git+file:///__w/Progress-Reporter/Progress-Reporter")
+>>>>>>> 55a5461 (調整 Arch AUR 包構建流程，新增檢查工作樹的命令並修正源碼路徑以確保正確構建)
           sha256sums=('SKIP')
 
           pkgver() {
