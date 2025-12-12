@@ -29,6 +29,19 @@ a {
   gap: 8px;
 }
 
+.locale-field {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+
+.locale-field select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #293241;
+  background: #0f141a;
+  color: #e6edf3;
+}
+
 .eyebrow {
   letter-spacing: 0.08em;
   text-transform: uppercase;

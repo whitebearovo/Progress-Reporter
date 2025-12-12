@@ -6,6 +6,8 @@ use crate::{AppState, Snapshot};
 use chrono::Utc;
 use std::time::Duration;
 use tauri::State;
+use tokio::task::spawn_blocking;
+use tokio::time::timeout;
 
 #[tauri::command]
 pub async fn cmd_start_watcher(state: State<'_, AppState>, config_path: Option<String>) -> Result<Snapshot, String> {
@@ -72,9 +74,9 @@ async fn run_loop(cfg: Config, state: AppState, config_path: String, session: Se
     let mut last_time = Utc::now();
 
     loop {
-        let process_name = active_window_process().unwrap_or_else(|_| "None".to_string());
+        let process_name = safe_active_window().await;
         let media_metadata = if cfg.media_enable {
-            media::get_media_metadata().unwrap_or_default()
+            safe_media_metadata().await
         } else {
             MediaMetadata::default()
         };
@@ -108,5 +110,19 @@ async fn run_loop(cfg: Config, state: AppState, config_path: String, session: Se
         }
 
         tokio::time::sleep(Duration::from_secs(cfg.watch_time.max(3))).await;
+    }
+}
+
+async fn safe_active_window() -> String {
+    match timeout(Duration::from_millis(1500), spawn_blocking(active_window_process)).await {
+        Ok(Ok(Ok(name))) => name,
+        _ => "None".to_string(),
+    }
+}
+
+async fn safe_media_metadata() -> MediaMetadata {
+    match timeout(Duration::from_millis(1500), spawn_blocking(media::get_media_metadata)).await {
+        Ok(Ok(Some(meta))) => meta,
+        _ => MediaMetadata::default(),
     }
 }
