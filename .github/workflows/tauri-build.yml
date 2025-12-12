@@ -103,7 +103,7 @@ jobs:
 
       - name: Build Arch AUR package locally
         run: |
-          su builder -c "mkdir -p /home/builder/src && cp -r /__w/Progress-Reporter/Progress-Reporter /home/builder/src/progress-reporter"
+          su builder -c "mkdir -p /home/builder/src/progress-reporter && rsync -a /__w/Progress-Reporter/Progress-Reporter/ /home/builder/src/progress-reporter/"
           su builder -c "mkdir -p /home/builder/repo"
           cat > /home/builder/repo/PKGBUILD <<'EOF'
           pkgname=progress-reporter-git
