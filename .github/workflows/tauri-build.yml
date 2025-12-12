@@ -83,6 +83,11 @@ jobs:
     container:
       image: archlinux:latest
     steps:
+      - name: Bootstrap git for checkout
+        run: |
+          pacman -Syu --noconfirm archlinux-keyring
+          pacman -S --noconfirm git ca-certificates
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -90,7 +95,6 @@ jobs:
 
       - name: Install Arch build dependencies
         run: |
-          pacman -Syu --noconfirm archlinux-keyring
           pacman -S --noconfirm base-devel git sudo nodejs npm yarn cargo rust pkgconf \
             openssl webkit2gtk gtk3 libayatana-appindicator librsvg dbus libsoup3 \
             libxkbcommon libx11 libxrandr fuse2 sccache
