@@ -103,7 +103,8 @@ jobs:
 
       - name: Build Arch AUR package locally
         run: |
-          su builder -c "cd /home/builder && cp -r /__w/Progress-Reporter/Progress-Reporter repo"
+          su builder -c "mkdir -p /home/builder/src && cp -r /__w/Progress-Reporter/Progress-Reporter /home/builder/src/progress-reporter"
+          su builder -c "mkdir -p /home/builder/repo"
           cat > /home/builder/repo/PKGBUILD <<'EOF'
           pkgname=progress-reporter-git
           pkgver=0.1.0
@@ -114,7 +115,7 @@ jobs:
           license=('MIT')
           depends=('webkit2gtk' 'gtk3' 'libayatana-appindicator' 'librsvg' 'dbus' 'openssl' 'libsoup3' 'libxkbcommon' 'libx11' 'libxrandr' 'fuse2')
           makedepends=('git' 'cargo' 'rust' 'npm' 'nodejs' 'yarn' 'pkgconf')
-          source=("progress-reporter::git+file:///home/builder/repo")
+          source=("progress-reporter::git+file:///home/builder/src/progress-reporter/.git")
           sha256sums=('SKIP')
 
           pkgver() {
@@ -138,7 +139,7 @@ jobs:
             install -Dm644 "$srcdir/progress-reporter/LICENSE" "$pkgdir/usr/share/licenses/progress-reporter/LICENSE"
           }
           EOF
-          chown builder:builder /home/builder/repo/PKGBUILD
+          chown -R builder:builder /home/builder/repo /home/builder/src/progress-reporter
           su builder -c "cd /home/builder/repo && makepkg -sf --noconfirm"
 
       - name: Upload Arch package artifact
